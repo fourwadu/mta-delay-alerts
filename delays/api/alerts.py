@@ -1,12 +1,9 @@
-from urllib.request import Request
 from gtfs import gtfs_realtime_pb2
-import requests
-from datetime import datetime
+from requests import Request, requests
 import os
 
 
 class GTFSAlertsFeed:
-
     def __init__(self):
         self.api_key = os.environ["API_KEY"]
         self.feed = None
@@ -15,10 +12,7 @@ class GTFSAlertsFeed:
         res = requests.get(
             f"https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/camsys%2Fsubway-alerts", headers={"x-api-key": self.api_key})
 
-        if res.status_code == 403:
-            raise RuntimeError("Invalid API_KEY")
-        elif res.status_code > 200:
-            raise RuntimeError("Invalid Response", res.content)
+        res.raise_for_status()
         return res
 
     @staticmethod
@@ -34,34 +28,31 @@ class GTFSAlertsFeed:
 
     @staticmethod
     def _alert_text(entity: gtfs_realtime_pb2.FeedMessage) -> str:
-        if entity.HasField("header_text"):
-            print("No entity")
         return entity.alert.header_text.translation[0].text
 
     @staticmethod
-    def _route_id(entity: gtfs_realtime_pb2.FeedMessage) -> str:
-        return (entity.alert.informed_entity[0].route_id)
+    def _stop_id(entity: gtfs_realtime_pb2.FeedMessage) -> str or None:
+        return entity.alert.informed_entity[0].stop_id
+
+    @staticmethod
+    def _route_id(entity: gtfs_realtime_pb2.FeedMessage) -> str or None:
+        return (entity.alert.informed_entity[0].route_id) or None
 
     def alerts(self):
         alerts = {}
         for alert in self.feed:
-            # have to check alert informed entity
-            # may be stop_id, or line_id
+            train_id = self._route_id(alert)
+            if train_id not in alerts:
+                alerts[train_id] = []
 
-            alerts[self._route_id(alert)] = {
+            alerts[train_id].append({
                 "text": self._alert_text(alert),
-                # TODO: functions for checking stop_id, line_id
-                "stop_id": None,
-                "line_id": None,
+                "stop_id": self._stop_id(alert),
                 "time": self._alert_timestamp(alert)
-            }
-
-        print(alerts)
+            })
 
     def service_alert(self):
         r = self.request()
         feed = self._parse_gtfs(r.content)
         self.feed = feed.entity
-        print(self.feed)
-
         self.alerts()
