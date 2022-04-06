@@ -1,10 +1,10 @@
-from delays.api.alerts import GTFSAlertsFeed
+from lib.service.feed import GTFSServiceFeed
 import os
 
 
 def main():
-    alerts = GTFSAlertsFeed()
-    alerts.service_alert()
+    feed = GTFSServiceFeed()
+    feed.refresh("ace")
 
 
 if __name__ == "__main__":
