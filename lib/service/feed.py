@@ -7,6 +7,8 @@ import requests
 
 import os
 
+from lib.trip import Trip
+
 
 class GTFSServiceFeed:
     def __init__(self):
@@ -35,27 +37,27 @@ class GTFSServiceFeed:
         return (trip_data.Extensions[nyct_subway_pb2.nyct_trip_descriptor].train_id[-7:], trip_data.route_id)
 
     def trip_feed(self) -> None:
-        updates = {}
+        self.refresh()
+        trip_updates = []
         for entity in self.feed:
             if entity.HasField("trip_update"):
-                trip_update = entity.trip_update
-                updates[self._trip_identifier(
-                    trip_update.trip)] = trip_update
-        return updates
+                trip_updates.append(Trip(entity).parse_update())
+
+        return trip_updates
 
     def vehicle_feed(self) -> dict:
-        vehicle_updates = {}
+        self.refresh()
+        vehicle_updates = []
         for entity in self.feed:
             if entity.HasField("vehicle"):
-                vehicle = entity.vehicle
-                vehicle_updates[self._trip_identifier(vehicle.trip)] = vehicle
+                vehicle_updates.append(Trip(entity).parse_update())
 
         return vehicle_updates
 
     def refresh(self, line: str = None):
         r = self.request(line)
         feed = self._decode_bytes(r.content)
-        self.feed = feed
+        self.feed = feed.entity
 
-        print(dir(feed))
-        # self.vehicle_feed()
+    def filter_feed(self, line: str = None):
+        self
