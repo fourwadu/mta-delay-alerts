@@ -1,6 +1,6 @@
-# mta-gtfs-wrapper
+# nyct-api
 
-Python 3 Library to parse the MTA's real-time Subway feeds!
+Python 3 Library to parse the MTA's real-time GTFS Subway feeds!
 
 ### Installation
 
